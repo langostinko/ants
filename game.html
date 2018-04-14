@@ -86,7 +86,7 @@ function Ant(x, y, type) {
     this.height = 10;
     this.dirX = 1;
     this.dirY = 0;
-    this.speed = 2;
+    this.speed = 4;
     this.smellR = 20;
     this.seeR = 5;
     this.randomStep = 0.5;
@@ -195,6 +195,20 @@ function Ant(x, y, type) {
     }
 }
 
+function drawSmellMap() {
+    for (var i = 0; i < smellMatrix.length; i += 1) {
+        for (var j = 0; j < smellMatrix[i].length; j += 1) {
+            ctx = myGameArea.context;
+            if (smellMatrix[i][j] < 0) {
+                var c = Math.floor(255 + smellMatrix[i][j] * 10)
+                ctx.fillStyle = 'rgb(' + c + ', ' + c + ', 255)';
+                ctx.fillRect(i * CELL_SIZE, j * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                smellMatrix[i][j] += 0.005
+            }
+        }
+    }
+}
+
 function updateGameArea() {
     var newFoods = []
     for (var j = 0; j < myFoods.length; j += 1) {
@@ -214,6 +228,7 @@ function updateGameArea() {
     myGameArea.clear();
     myGameArea.frameNo += 1;
 
+    drawSmellMap();
     for (var i = 0; i < myFoods.length; i += 1) {
         myFoods[i].update();
     }
