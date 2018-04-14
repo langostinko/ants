@@ -108,10 +108,10 @@ function Ant(x, y, type) {
     this.score = 0;
     this.width = 10;
     this.height = 10;
-    this.dirX = 1;
-    this.dirY = 0;
+    this.targetX = 0;
+    this.targetY = 0;
     this.speed = 4;
-    this.smellR = 20;
+    this.smellR = 5;
     this.seeR = 5;
     this.randomStep = 0.3;
     this.smellPower = 1;
@@ -145,48 +145,41 @@ function Ant(x, y, type) {
     this.smell = function() {
         var antX = Math.floor(this.x / CELL_SIZE)
         var antY = Math.floor(this.y / CELL_SIZE)
-        this.dirX = 0;
-        this.dirY = 0;
+        if ((this.targetX || this.targetY)
+            && (antX != this.targetX || antY != this.targetY)) {
+            return
+        }
+        this.targetX = 0;
+        this.targetY = 0;
 
         if (!this.withFood) {
+            foodSmellMatrix[antX][antY] = 0
             for (var i = Math.max(-this.seeR, -antX); i <= Math.min(this.seeR, MAP_WIDTH - 1 - antX); i += 1) {
-                for (var j = Math.max(-this.seeR, -antY); j <= Math.min(this.seeR, MAP_WIDTH - 1 - antY); j += 1) {
+                for (var j = Math.max(-this.seeR, -antY); j <= Math.min(this.seeR, MAP_HEIGHT - 1 - antY); j += 1) {
                     if (foodMatrix[antX + i][antY + j]) {
-                        this.dirX = i;
-                        this.dirY = j;
+                        this.targetX = antX + i;
+                        this.targetY = antY + j;
                     }
                 }
             }
         }
 
-        if (this.dirX == 0 && this.dirY == 0) {
+        if (this.targetX == 0 && this.targetY == 0) {
             var r = Math.random();
             if (r > 1 - this.randomStep) {
-                this.dirX = Math.random() - 0.5;
-                if (antX == 0) {
-                    this.dirX += 0.5
-                } else if (antX == MAP_WIDTH - 1) {
-                    this.dirX -= 0.5
-                }
-                this.dirY = Math.random() - 0.5;
-                if (antY == 0) {
-                    this.dirY += 0.5
-                } else if (antY == MAP_WIDTH - 1) {
-                    this.dirY -= 0.5
-                }
+                var xmin = Math.max(-this.seeR, -antX)
+                var xmax = Math.min(this.seeR, MAP_WIDTH - 1 - antX)
+                this.targetX = antX + Math.floor(Math.random() * (xmax - xmin) + xmin)
+                var ymin = Math.max(-this.seeR, -antY)
+                var ymax = Math.min(this.seeR, MAP_HEIGHT - 1 - antY)
+                this.targetY = antY + Math.floor(Math.random() * (ymax - ymin) + ymin)
             }
         }
 
-        if (this.dirX == 0 && this.dirY == 0) {
+        if (this.targetX == 0 && this.targetY == 0) {
             var maxSmell = -1000
             for (var i = Math.max(-this.smellR, -antX); i <= Math.min(this.smellR, MAP_WIDTH - 1 - antX); i += 1) {
-                for (var j = Math.max(-this.smellR, -antY); j <= Math.min(this.smellR, MAP_WIDTH - 1 - antY); j += 1) {
-                    var len = Math.sqrt(i*i + j*j);
-                    if (len == 0) {
-                        continue;
-                    }
-                    var curX = i / len;
-                    var curY = j / len;
+                for (var j = Math.max(-this.smellR, -antY); j <= Math.min(this.smellR, MAP_HEIGHT - 1 - antY); j += 1) {
                     var curSmell = 0
                     if (this.withFood) {
                         curSmell = nestSmellMatrix[antX + i][antY + j]
@@ -199,22 +192,23 @@ function Ant(x, y, type) {
                     }
                     if (curSmell > maxSmell) {
                         maxSmell = curSmell
-                        this.dirX = curX;
-                        this.dirY = curY;
+                        this.targetX = antX + i;
+                        this.targetY = antY + j;
                     }
                 }
             }
         }
-
-        var len = Math.sqrt(this.dirX * this.dirX + this.dirY * this.dirY);
-        if (len != 0) {
-            this.dirX /= len
-            this.dirY /= len
-        }
     }
     this.step = function() {
-        this.x += this.speed * this.dirX;
-        this.y += this.speed * this.dirY;
+        var antX = Math.floor(this.x / CELL_SIZE)
+        var antY = Math.floor(this.y / CELL_SIZE)
+        var dx = this.targetX - antX
+        var dy = this.targetY - antY
+        var len = Math.sqrt(dx*dx + dy*dy);
+        if (len) {
+            this.x += this.speed * dx / len;
+            this.y += this.speed * dy / len;
+        }
         this.hitSide();
     }
     this.hitSide = function() {
@@ -304,9 +298,7 @@ function updateGameArea() {
                 myAnts[i].dropFood()
             }
         }
-        if (myGameArea.frameNo % 10 == 0) {
-            myAnts[i].smell();
-        }
+        myAnts[i].smell();
         myAnts[i].step();
         myAnts[i].update();
     }
