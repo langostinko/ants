@@ -44,7 +44,7 @@ function startGame() {
 
     myAnts.push(new Ant(250, 250));
 
-    myFoods.push(new Food(230, 140));
+    myFoods.push(new Food(230, 200));
     myFoods.push(new Food(400, 400));
     myFoods.push(new Food(350, 100));
     myFoods.push(new Food(50, 200));
@@ -127,6 +127,7 @@ function Ant(x, y) {
     this.targetY = 0;
     this.smellPower = 1;
     this.withFood = false
+    this.lastRandomStepTS = 0
     this.x = x;
     this.y = y;
 
@@ -153,7 +154,7 @@ function Ant(x, y) {
         }
         this.smellPower *= 0.998
     }
-    this.smell = function() {
+    this.smell = function(ts) {
         var antX = Math.floor(this.x / CELL_SIZE)
         var antY = Math.floor(this.y / CELL_SIZE)
         if (this.targetX || this.targetY) {
@@ -179,9 +180,10 @@ function Ant(x, y) {
             }
         }
 
-        if (this.targetX == 0 && this.targetY == 0) {
+        if (this.targetX == 0 && this.targetY == 0 && (ts - this.lastRandomStepTS > 10)) {
             var r = Math.random();
             if (r > 1 - this.randomStep) {
+                this.lastRandomStepTS = ts
                 var xmin = Math.max(-this.seeR, -antX)
                 var xmax = Math.min(this.seeR, MAP_WIDTH - 1 - antX)
                 this.targetX = antX + Math.floor(Math.random() * (xmax - xmin) + xmin)
@@ -349,7 +351,7 @@ function updateGameArea() {
             }
             myAnts[i].dropFood()
         }
-        myAnts[i].smell();
+        myAnts[i].smell(myGameArea.frameNo);
         myAnts[i].step();
         myAnts[i].update();
     }
