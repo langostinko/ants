@@ -94,7 +94,7 @@ function Food(x, y) {
     this.height = 1 * CELL_SIZE;
     this.x = x;
     this.y = y;
-    this.count = 5
+    this.count = 20
     this.update = function() {
         ctx = myGameArea.context;
         ctx.fillStyle = this.color;
@@ -362,7 +362,7 @@ function updateGameArea() {
             newFoods.push(myFoods[i]);
         }
     }
-    if (myGameArea.frameNo % 300 == 0) {
+    if (myGameArea.frameNo % 1200 == 0) {
         newFoods.push(new Food(Math.random() * MAP_WIDTH * CELL_SIZE, Math.random() * MAP_HEIGHT * CELL_SIZE));
     }
     myFoods = newFoods;
