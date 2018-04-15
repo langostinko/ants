@@ -127,6 +127,7 @@ function Ant(x, y, type) {
             ctx.fillStyle = "orange"
         }
         ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.fillRect(this.targetX * CELL_SIZE, this.targetY * CELL_SIZE, this.width, this.height);
         var antX = Math.floor(this.x / CELL_SIZE)
         var antY = Math.floor(this.y / CELL_SIZE)
         if (this.withFood) {
@@ -145,15 +146,18 @@ function Ant(x, y, type) {
     this.smell = function() {
         var antX = Math.floor(this.x / CELL_SIZE)
         var antY = Math.floor(this.y / CELL_SIZE)
-        if ((this.targetX || this.targetY)
-            && (antX != this.targetX || antY != this.targetY)) {
-            return
+        if (this.targetX || this.targetY) {
+            if (antX != this.targetX || antY != this.targetY) {
+                return
+            }
+            if (!this.withFood) { // remove old food path
+                foodSmellMatrix[antX][antY] = 0
+            }
         }
         this.targetX = 0;
         this.targetY = 0;
 
         if (!this.withFood) {
-            foodSmellMatrix[antX][antY] = 0
             for (var i = Math.max(-this.seeR, -antX); i <= Math.min(this.seeR, MAP_WIDTH - 1 - antX); i += 1) {
                 for (var j = Math.max(-this.seeR, -antY); j <= Math.min(this.seeR, MAP_HEIGHT - 1 - antY); j += 1) {
                     if (foodMatrix[antX + i][antY + j]) {
@@ -177,9 +181,14 @@ function Ant(x, y, type) {
         }
 
         if (this.targetX == 0 && this.targetY == 0) {
-            var maxSmell = -1000
+            var maxSmell = 0
+            var noSmellX = 0
+            var noSmellY = 0
             for (var i = Math.max(-this.smellR, -antX); i <= Math.min(this.smellR, MAP_WIDTH - 1 - antX); i += 1) {
                 for (var j = Math.max(-this.smellR, -antY); j <= Math.min(this.smellR, MAP_HEIGHT - 1 - antY); j += 1) {
+                    if (i == 0 && j == 0) {
+                        continue;
+                    }
                     var curSmell = 0
                     if (this.withFood) {
                         curSmell = nestSmellMatrix[antX + i][antY + j]
@@ -187,7 +196,9 @@ function Ant(x, y, type) {
                         if (foodSmellMatrix[antX + i][antY + j]) {
                             curSmell = foodSmellMatrix[antX + i][antY + j]
                         } else {
-                            curSmell = -nestSmellMatrix[antX + i][antY + j]
+                            var len = Math.sqrt(i * i + j * j)
+                            noSmellX -= nestSmellMatrix[antX + i][antY + j] * i / len
+                            noSmellY -= nestSmellMatrix[antX + i][antY + j] * j / len
                         }
                     }
                     if (curSmell > maxSmell) {
@@ -196,6 +207,13 @@ function Ant(x, y, type) {
                         this.targetY = antY + j;
                     }
                 }
+            }
+            if (!maxSmell) {
+                var len = Math.sqrt(noSmellX * noSmellX + noSmellY * noSmellY)
+                this.targetX = Math.floor(noSmellX / len * this.smellR)
+                this.targetY = Math.floor(noSmellY / len * this.smellR)
+                this.targetX = Math.max(0, Math.min(MAP_WIDTH - 1, antX + this.targetX))
+                this.targetY = Math.max(0, Math.min(MAP_HEIGHT - 1, antY + this.targetY))
             }
         }
     }
@@ -296,6 +314,7 @@ function updateGameArea() {
         } else {
             if (myAnts[i].crashWith(nest)) {
                 myAnts[i].dropFood()
+                myAnts[i].smellPower = 1
             }
         }
         myAnts[i].smell();
