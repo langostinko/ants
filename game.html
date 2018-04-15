@@ -13,9 +13,9 @@ canvas {
 <script>
 
 var UPDATE_INTERVAL = 50;
-var CELL_SIZE = 10;
-var MAP_WIDTH = 50;
-var MAP_HEIGHT = 50;
+var CELL_SIZE = 5;
+var MAP_WIDTH = 100;
+var MAP_HEIGHT = 100;
 
 var nestSmellMatrix = []
 for (var i = 0; i < MAP_WIDTH; i += 1) {
@@ -43,7 +43,6 @@ function startGame() {
     nest = new Nest(240, 240);
 
     myAnts.push(new Ant(250, 250));
-    myAnts.push(new Ant(250, 250));
 
     myFoods.push(new Food(230, 140));
     myFoods.push(new Food(400, 400));
@@ -70,10 +69,11 @@ var myGameArea = {
 
 function Nest(x, y) {
     this.color = "brown"
-    this.width = 20;
-    this.height = 20;
+    this.width = 2 * CELL_SIZE;
+    this.height = 2 * CELL_SIZE;
     this.x = x;
     this.y = y;
+    this.foods = 0
     this.update = function() {
         ctx = myGameArea.context;
         ctx.fillStyle = this.color;
@@ -81,13 +81,17 @@ function Nest(x, y) {
         var nestX = Math.floor(this.x / CELL_SIZE)
         var nestY = Math.floor(this.y / CELL_SIZE)
         nestSmellMatrix[nestX][nestY] = 2
+        while (this.foods >= 5) {
+            myAnts.push(new Ant(250, 250))
+            this.foods -= 5
+        }
     }
 }
 
 function Food(x, y) {
     this.color = "green"
-    this.width = 10;
-    this.height = 10;
+    this.width = 1 * CELL_SIZE;
+    this.height = 1 * CELL_SIZE;
     this.x = x;
     this.y = y;
     this.count = 5
@@ -111,9 +115,9 @@ function Food(x, y) {
 
 function Ant(x, y) {
     this.STATE_ENUM = {"SEARCH_FOOD":0, "SEARCH_NEST":1}
-    this.width = 10;
-    this.height = 10;
-    this.speed = 4;
+    this.width = 1 * CELL_SIZE;
+    this.height = 1 * CELL_SIZE;
+    this.speed = 0.5 * CELL_SIZE;
     this.smellR = 5;
     this.seeR = 5;
     this.randomStep = 0.3;
@@ -134,7 +138,6 @@ function Ant(x, y) {
             ctx.fillStyle = "orange"
         }
         ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.fillRect(this.targetX * CELL_SIZE, this.targetY * CELL_SIZE, this.width, this.height);
         var antX = Math.floor(this.x / CELL_SIZE)
         var antY = Math.floor(this.y / CELL_SIZE)
         if (this.withFood) {
@@ -323,6 +326,10 @@ function updateGameArea() {
             if (foodSmellMatrix[i][j] < 0.001) {
                 foodSmellMatrix[i][j] = 0
             }
+            nestSmellMatrix[i][j] *= 0.999
+            if (nestSmellMatrix[i][j] < 0.001) {
+                nestSmellMatrix[i][j] = 0
+            }
         }
     }
 
@@ -337,6 +344,9 @@ function updateGameArea() {
             }
         }
         if (myAnts[i].crashWith(nest)) {
+            if (myAnts[i].withFood) {
+                nest.foods += 1
+            }
             myAnts[i].dropFood()
         }
         myAnts[i].smell();
@@ -349,6 +359,9 @@ function updateGameArea() {
         if (myFoods[i].count > 0) {
             newFoods.push(myFoods[i]);
         }
+    }
+    if (myGameArea.frameNo % 300 == 0) {
+        newFoods.push(new Food(Math.random() * MAP_WIDTH * CELL_SIZE, Math.random() * MAP_HEIGHT * CELL_SIZE));
     }
     myFoods = newFoods;
     for (var i = 0; i < myFoods.length; i += 1) {
