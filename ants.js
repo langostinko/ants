@@ -90,9 +90,6 @@ function Food(x, y) {
     this.y = y;
     this.count = 20
     this.update = function() {
-        ctx = myGameArea.context;
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
         var foodX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var foodY = Math.floor(this.y / myGameArea.CELL_SIZE)
         myGameArea.foodMatrix[foodX][foodY] = 1
@@ -104,6 +101,11 @@ function Food(x, y) {
         if (!this.count) {
             myGameArea.foodMatrix[foodX][foodY] = 0
         }
+    }
+    this.draw = function() {
+        ctx = myGameArea.context;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
@@ -362,6 +364,7 @@ function updateGameArea() {
     myGameArea.myFoods = newFoods;
     for (var i = 0; i < myGameArea.myFoods.length; i += 1) {
         myGameArea.myFoods[i].update();
+        myGameArea.myFoods[i].draw();
     }
 
     myGameArea.nest.update();
