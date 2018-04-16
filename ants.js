@@ -12,13 +12,10 @@ var myGameArea = {
     myAnts: [],
     myFoods: [],
 
-    start : function() {
+    init : function() {
         this.canvas.width = this.MAP_WIDTH * this.CELL_SIZE;
         this.canvas.height = this.MAP_HEIGHT * this.CELL_SIZE;
         this.context = this.canvas.getContext("2d");
-        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-        this.frameNo = 0;
-        this.interval = setInterval(updateGameArea, this.UPDATE_INTERVAL);
 
         for (var i = 0; i < this.MAP_WIDTH; i += 1) {
             this.nestSmellMatrix[i] = new Array(this.MAP_HEIGHT);
@@ -38,6 +35,11 @@ var myGameArea = {
             this.foodMatrix[i] = new Array(this.MAP_HEIGHT);
         }
     },
+    start : function() {
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.frameNo = 0;
+        this.interval = setInterval(updateGameArea, this.UPDATE_INTERVAL);
+    },
     clear : function() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
@@ -53,6 +55,7 @@ function startGame() {
     myGameArea.myFoods.push(new Food(350, 100));
     myGameArea.myFoods.push(new Food(50, 200));
 
+    myGameArea.init();
     myGameArea.start();
 }
 
@@ -64,9 +67,6 @@ function Nest(x, y) {
     this.y = y;
     this.foods = 0
     this.update = function() {
-        ctx = myGameArea.context;
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
         var nestX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var nestY = Math.floor(this.y / myGameArea.CELL_SIZE)
         myGameArea.nestSmellMatrix[nestX][nestY] = 2
@@ -74,6 +74,11 @@ function Nest(x, y) {
             myGameArea.myAnts.push(new Ant(250, 250))
             this.foods -= 5
         }
+    }
+    this.draw = function() {
+        ctx = myGameArea.context;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
@@ -360,6 +365,7 @@ function updateGameArea() {
     }
 
     myGameArea.nest.update();
+    myGameArea.nest.draw();
 }
 
 function everyinterval(n) {
