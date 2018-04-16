@@ -1,0 +1,365 @@
+var UPDATE_INTERVAL = 50;
+var CELL_SIZE = 5;
+var MAP_WIDTH = 100;
+var MAP_HEIGHT = 100;
+
+var nestSmellMatrix = []
+for (var i = 0; i < MAP_WIDTH; i += 1) {
+    nestSmellMatrix[i] = new Array(MAP_HEIGHT);
+    for (var j = 0; j < MAP_HEIGHT; j += 1) {
+        nestSmellMatrix[i][j] = 0
+    }
+}
+var foodSmellMatrix = []
+for (var i = 0; i < MAP_WIDTH; i += 1) {
+    foodSmellMatrix[i] = new Array(MAP_HEIGHT);
+    for (var j = 0; j < MAP_HEIGHT; j += 1) {
+        foodSmellMatrix[i][j] = 0
+    }
+}
+var foodMatrix = []
+for (var i = 0; i < MAP_WIDTH; i += 1) {
+    foodMatrix[i] = new Array(MAP_HEIGHT);
+}
+var nest;
+var myAnts = [];
+var myFoods = [];
+
+function startGame() {
+    nest = new Nest(240, 240);
+
+    myAnts.push(new Ant(250, 250));
+
+    myFoods.push(new Food(230, 200));
+    myFoods.push(new Food(400, 400));
+    myFoods.push(new Food(350, 100));
+    myFoods.push(new Food(50, 200));
+
+    myGameArea.start();
+}
+
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = MAP_WIDTH * CELL_SIZE;
+        this.canvas.height = MAP_HEIGHT * CELL_SIZE;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.frameNo = 0;
+        this.interval = setInterval(updateGameArea, UPDATE_INTERVAL);
+        },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+function Nest(x, y) {
+    this.color = "brown"
+    this.width = 2 * CELL_SIZE;
+    this.height = 2 * CELL_SIZE;
+    this.x = x;
+    this.y = y;
+    this.foods = 0
+    this.update = function() {
+        ctx = myGameArea.context;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        var nestX = Math.floor(this.x / CELL_SIZE)
+        var nestY = Math.floor(this.y / CELL_SIZE)
+        nestSmellMatrix[nestX][nestY] = 2
+        while (this.foods >= 5) {
+            myAnts.push(new Ant(250, 250))
+            this.foods -= 5
+        }
+    }
+}
+
+function Food(x, y) {
+    this.color = "green"
+    this.width = 1 * CELL_SIZE;
+    this.height = 1 * CELL_SIZE;
+    this.x = x;
+    this.y = y;
+    this.count = 20
+    this.update = function() {
+        ctx = myGameArea.context;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        var foodX = Math.floor(this.x / CELL_SIZE)
+        var foodY = Math.floor(this.y / CELL_SIZE)
+        foodMatrix[foodX][foodY] = 1
+    }
+    this.eated = function() {
+        var foodX = Math.floor(this.x / CELL_SIZE)
+        var foodY = Math.floor(this.y / CELL_SIZE)
+        this.count -= 1
+        if (!this.count) {
+            foodMatrix[foodX][foodY] = 0
+        }
+    }
+}
+
+function Ant(x, y) {
+    this.STATE_ENUM = {"SEARCH_FOOD":0, "SEARCH_NEST":1}
+    this.width = 1 * CELL_SIZE;
+    this.height = 1 * CELL_SIZE;
+    this.speed = 0.5 * CELL_SIZE;
+    this.smellR = 5;
+    this.seeR = 5;
+    this.randomStep = 0.3;
+
+    this.state = 0;
+    this.targetX = 0;
+    this.targetY = 0;
+    this.smellPower = 1;
+    this.withFood = false
+    this.lastRandomStepTS = 0
+    this.x = x;
+    this.y = y;
+
+    this.update = function() {
+        ctx = myGameArea.context;
+        if (this.withFood) {
+            ctx.fillStyle = "red"
+        } else {
+            ctx.fillStyle = "orange"
+        }
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        var antX = Math.floor(this.x / CELL_SIZE)
+        var antY = Math.floor(this.y / CELL_SIZE)
+        if (this.withFood) {
+            foodSmellMatrix[antX][antY] = Math.max(
+                foodSmellMatrix[antX][antY]
+                , this.smellPower
+            )
+        } else {
+            nestSmellMatrix[antX][antY] = Math.max(
+                nestSmellMatrix[antX][antY]
+                , this.smellPower
+            )
+        }
+        this.smellPower *= 0.998
+    }
+    this.smell = function(ts) {
+        var antX = Math.floor(this.x / CELL_SIZE)
+        var antY = Math.floor(this.y / CELL_SIZE)
+        if (this.targetX || this.targetY) {
+            if (antX != this.targetX || antY != this.targetY) {
+                return
+            }
+        }
+        this.targetX = 0;
+        this.targetY = 0;
+
+        if (this.state == this.STATE_ENUM['SEARCH_FOOD'] && this.smellPower < 0.5) {
+            this.state = this.STATE_ENUM['SEARCH_NEST']
+        }
+
+        if (this.state == this.STATE_ENUM['SEARCH_FOOD']) {
+            for (var i = Math.max(-this.seeR, -antX); i <= Math.min(this.seeR, MAP_WIDTH - 1 - antX); i += 1) {
+                for (var j = Math.max(-this.seeR, -antY); j <= Math.min(this.seeR, MAP_HEIGHT - 1 - antY); j += 1) {
+                    if (foodMatrix[antX + i][antY + j]) {
+                        this.targetX = antX + i;
+                        this.targetY = antY + j;
+                    }
+                }
+            }
+        }
+
+        if (this.targetX == 0 && this.targetY == 0 && (ts - this.lastRandomStepTS > 10)) {
+            var r = Math.random();
+            if (r > 1 - this.randomStep) {
+                this.lastRandomStepTS = ts
+                var xmin = Math.max(-this.seeR, -antX)
+                var xmax = Math.min(this.seeR, MAP_WIDTH - 1 - antX)
+                this.targetX = antX + Math.floor(Math.random() * (xmax - xmin) + xmin)
+                var ymin = Math.max(-this.seeR, -antY)
+                var ymax = Math.min(this.seeR, MAP_HEIGHT - 1 - antY)
+                this.targetY = antY + Math.floor(Math.random() * (ymax - ymin) + ymin)
+            }
+        }
+
+        if (this.targetX == 0 && this.targetY == 0) {
+            var maxSmell = 0
+            var curPosSmell = 0
+            if (this.state == this.STATE_ENUM['SEARCH_NEST']) {
+                curPosSmell = nestSmellMatrix[antX][antY]
+            } else {
+                curPosSmell = foodSmellMatrix[antX][antY]
+            }
+            var noSmellX = 0
+            var noSmellY = 0
+            for (var i = Math.max(-this.smellR, -antX); i <= Math.min(this.smellR, MAP_WIDTH - 1 - antX); i += 1) {
+                for (var j = Math.max(-this.smellR, -antY); j <= Math.min(this.smellR, MAP_HEIGHT - 1 - antY); j += 1) {
+                    if (i == 0 && j == 0) {
+                        continue;
+                    }
+                    var curSmell = 0
+                    if (this.state == this.STATE_ENUM['SEARCH_NEST']) {
+                        curSmell = nestSmellMatrix[antX + i][antY + j]
+                    } else {
+                        if (foodSmellMatrix[antX + i][antY + j]) {
+                            curSmell = foodSmellMatrix[antX + i][antY + j]
+                        } else {
+                            var len = Math.sqrt(i * i + j * j)
+                            noSmellX -= nestSmellMatrix[antX + i][antY + j] * i / len
+                            noSmellY -= nestSmellMatrix[antX + i][antY + j] * j / len
+                        }
+                    }
+                    if (curSmell > maxSmell) {
+                        maxSmell = curSmell
+                        this.targetX = antX + i;
+                        this.targetY = antY + j;
+                    }
+                }
+            }
+            if (maxSmell <= curPosSmell) {
+                if (this.state == this.STATE_ENUM['SEARCH_FOOD']) { // remove old food path
+                    foodSmellMatrix[antX][antY] = 0
+                }
+            }
+            if (!maxSmell) {
+                var len = Math.sqrt(noSmellX * noSmellX + noSmellY * noSmellY)
+                this.targetX = Math.floor(noSmellX / len * this.smellR)
+                this.targetY = Math.floor(noSmellY / len * this.smellR)
+                this.targetX = Math.max(0, Math.min(MAP_WIDTH - 1, antX + this.targetX))
+                this.targetY = Math.max(0, Math.min(MAP_HEIGHT - 1, antY + this.targetY))
+            }
+        }
+    }
+    this.step = function() {
+        var tx = this.targetX * CELL_SIZE
+        var ty = this.targetY * CELL_SIZE
+        var dx = tx - this.x
+        var dy = ty - this.y
+        var len = Math.sqrt(dx*dx + dy*dy);
+        if (len < this.speed) {
+            this.x = tx
+            this.y = ty
+        } else if (len) {
+            this.x += this.speed * dx / len;
+            this.y += this.speed * dy / len;
+        }
+        this.hitSide();
+    }
+    this.hitSide = function() {
+        var rockbottom = myGameArea.canvas.height - this.height;
+        if (this.y > rockbottom) {
+            this.y = rockbottom;
+        }
+        var rockright = myGameArea.canvas.width - this.width;
+        if (this.x > rockright) {
+            this.x = rockright;
+        }
+        if (this.y < 0) {
+            this.y = 0;
+        }
+        if (this.x < 0) {
+            this.x = 0;
+        }
+    }
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+        if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+            crash = false;
+        }
+        return crash;
+    }
+    this.takeFood = function() {
+        this.state = this.STATE_ENUM["SEARCH_NEST"]
+        this.withFood = true
+        this.smellPower = 1
+    }
+    this.dropFood = function() {
+        this.state = this.STATE_ENUM["SEARCH_FOOD"]
+        this.withFood = false
+        this.smellPower = 1
+    }
+}
+
+function drawSmellMap(matrix, color) {
+    for (var i = 0; i < matrix.length; i += 1) {
+        for (var j = 0; j < matrix[i].length; j += 1) {
+            ctx = myGameArea.context;
+            if (matrix[i][j] > 0) {
+                var c = Math.floor(255 - matrix[i][j] * 40)
+                ctx.fillStyle = 'rgb('
+                    + color[0] * c
+                    + ', ' + color[1] * c
+                    + ', ' + color[2] * c
+                    + ')';
+                ctx.fillRect(i * CELL_SIZE, j * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            }
+        }
+    }
+}
+
+function updateGameArea() {
+    myGameArea.clear();
+    myGameArea.frameNo += 1;
+
+    drawSmellMap(nestSmellMatrix, [1, 1, 255]);
+    drawSmellMap(foodSmellMatrix, [1, 255, 1]);
+    for (var i = 0; i < nestSmellMatrix.length; i += 1) {
+        for (var j = 0; j < nestSmellMatrix[i].length; j += 1) {
+            foodSmellMatrix[i][j] *= 0.999
+            if (foodSmellMatrix[i][j] < 0.001) {
+                foodSmellMatrix[i][j] = 0
+            }
+            nestSmellMatrix[i][j] *= 0.999
+            if (nestSmellMatrix[i][j] < 0.001) {
+                nestSmellMatrix[i][j] = 0
+            }
+        }
+    }
+
+    for (var i = 0; i < myAnts.length; i += 1) {
+        if (!myAnts[i].withFood) {
+            for (var j = 0; j < myFoods.length; j += 1) {
+                if (myFoods[j].count > 0 && myAnts[i].crashWith(myFoods[j])) {
+                    myAnts[i].takeFood()
+                    myFoods[j].eated()
+                    break
+                }
+            }
+        }
+        if (myAnts[i].crashWith(nest)) {
+            if (myAnts[i].withFood) {
+                nest.foods += 1
+            }
+            myAnts[i].dropFood()
+        }
+        myAnts[i].smell(myGameArea.frameNo);
+        myAnts[i].step();
+        myAnts[i].update();
+    }
+
+    var newFoods = []
+    for (var i = 0; i < myFoods.length; i += 1) {
+        if (myFoods[i].count > 0) {
+            newFoods.push(myFoods[i]);
+        }
+    }
+    if (myGameArea.frameNo % 1200 == 0) {
+        newFoods.push(new Food(Math.random() * MAP_WIDTH * CELL_SIZE, Math.random() * MAP_HEIGHT * CELL_SIZE));
+    }
+    myFoods = newFoods;
+    for (var i = 0; i < myFoods.length; i += 1) {
+        myFoods[i].update();
+    }
+
+    nest.update();
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
