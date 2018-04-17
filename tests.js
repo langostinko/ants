@@ -98,4 +98,55 @@ describe("Ant", function() {
       assert.equal(ant.targetY, 0);
   });
 
+  it("sets target to max food smell", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      myGameArea.foodSmellMatrix[8][5] = 1
+      ant._trySetTargetMaxFoodSmell()
+      assert.equal(ant.targetX, 8);
+      assert.equal(ant.targetY, 5);
+  });
+
+  it("not sets target to max food when no food smell nearby", function() {
+      myGameArea.init()
+      ant = new Ant(50, 50)
+      ant._trySetTargetMaxFoodSmell()
+      assert.equal(ant.targetX, 0);
+      assert.equal(ant.targetY, 0);
+  });
+
+  it("sets target away from nest", function() {
+      myGameArea.init()
+      ant = new Ant(50, 50)
+      myGameArea.nestSmellMatrix[10][8] = 1
+      ant._trySetTargetAwayFromNest()
+      assert.equal(ant.targetX, 10);
+      assert.equal(ant.targetY, 15);
+  });
+
+  it("not sets target away from nest when no nest smell nearby", function() {
+      myGameArea.init()
+      ant = new Ant(50, 50)
+      ant._trySetTargetAwayFromNest()
+      assert.equal(ant.targetX, 0);
+      assert.equal(ant.targetY, 0);
+  });
+
+  it("sets target to max nest smell", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      myGameArea.nestSmellMatrix[8][5] = 1
+      ant._trySetTargetMaxNestSmell()
+      assert.equal(ant.targetX, 8);
+      assert.equal(ant.targetY, 5);
+  });
+
+  it("not sets target to max nest smell when no nest smell nearby", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      ant._trySetTargetMaxNestSmell()
+      assert.equal(ant.targetX, 0);
+      assert.equal(ant.targetY, 0);
+  });
+
 });
