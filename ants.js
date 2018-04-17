@@ -152,22 +152,6 @@ function Ant(x, y) {
         }
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
-    this._tryRandomTarget = function(ts) {
-        var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
-        var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
-        if (ts - this.lastRandomStepTS > 10) {
-            var r = Math.random();
-            if (r > 1 - this.randomStep) {
-                this.lastRandomStepTS = ts
-                var xmin = Math.max(-this.seeR, -antX)
-                var xmax = Math.min(this.seeR, myGameArea.MAP_WIDTH - 1 - antX)
-                this.targetX = antX + Math.floor(Math.random() * (xmax - xmin) + xmin)
-                var ymin = Math.max(-this.seeR, -antY)
-                var ymax = Math.min(this.seeR, myGameArea.MAP_HEIGHT - 1 - antY)
-                this.targetY = antY + Math.floor(Math.random() * (ymax - ymin) + ymin)
-            }
-        }
-    }
     this.smell = function(ts) {
         var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
@@ -184,18 +168,11 @@ function Ant(x, y) {
         }
 
         if (this.state == this.STATE_ENUM['SEARCH_FOOD']) {
-            for (var i = Math.max(-this.seeR, -antX); i <= Math.min(this.seeR, myGameArea.MAP_WIDTH - 1 - antX); i += 1) {
-                for (var j = Math.max(-this.seeR, -antY); j <= Math.min(this.seeR, myGameArea.MAP_HEIGHT - 1 - antY); j += 1) {
-                    if (myGameArea.foodMatrix[antX + i][antY + j]) {
-                        this.targetX = antX + i;
-                        this.targetY = antY + j;
-                    }
-                }
-            }
+            this._trySetTargetFood();
         }
 
         if (this.targetX == 0 && this.targetY == 0) {
-            this._tryRandomTarget(ts);
+            this._trySetTargetRandom(ts);
         }
 
         if (this.targetX == 0 && this.targetY == 0) {
@@ -301,6 +278,34 @@ function Ant(x, y) {
         this.state = this.STATE_ENUM["SEARCH_FOOD"]
         this.withFood = false
         this.smellPower = 1
+    }
+    this._trySetTargetRandom = function(ts) {
+        var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
+        var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
+        if (ts - this.lastRandomStepTS > 10) {
+            var r = Math.random();
+            if (r > 1 - this.randomStep) {
+                this.lastRandomStepTS = ts
+                var xmin = Math.max(-this.seeR, -antX)
+                var xmax = Math.min(this.seeR, myGameArea.MAP_WIDTH - 1 - antX)
+                this.targetX = antX + Math.floor(Math.random() * (xmax - xmin) + xmin)
+                var ymin = Math.max(-this.seeR, -antY)
+                var ymax = Math.min(this.seeR, myGameArea.MAP_HEIGHT - 1 - antY)
+                this.targetY = antY + Math.floor(Math.random() * (ymax - ymin) + ymin)
+            }
+        }
+    }
+    this._trySetTargetFood = function() {
+        var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
+        var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
+        for (var i = Math.max(-this.seeR, -antX); i <= Math.min(this.seeR, myGameArea.MAP_WIDTH - 1 - antX); i += 1) {
+            for (var j = Math.max(-this.seeR, -antY); j <= Math.min(this.seeR, myGameArea.MAP_HEIGHT - 1 - antY); j += 1) {
+                if (myGameArea.foodMatrix[antX + i][antY + j]) {
+                    this.targetX = antX + i;
+                    this.targetY = antY + j;
+                }
+            }
+        }
     }
 }
 

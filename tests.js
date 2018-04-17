@@ -62,20 +62,38 @@ describe("Ant", function() {
       assert.equal(myGameArea.foodSmellMatrix[ant.x / myGameArea.CELL_SIZE][ant.y / myGameArea.CELL_SIZE], 1);
   });
 
-  it("makes random step sometimes", function() {
+  it("sets target to random sometimes", function() {
       myGameArea.init()
       ant = new Ant(40, 30)
       ant.randomStep = 1
-      ant._tryRandomTarget(15)
+      ant._trySetTargetRandom(15)
       assert.notEqual(ant.targetX, 0);
       assert.notEqual(ant.targetY, 0);
   });
 
-  it("not makes random step too frequent", function() {
+  it("not tests target to random too frequent", function() {
       myGameArea.init()
       ant = new Ant(40, 30)
       ant.randomStep = 1
-      ant._tryRandomTarget(1)
+      ant._trySetTargetRandom(1)
+      assert.equal(ant.targetX, 0);
+      assert.equal(ant.targetY, 0);
+  });
+
+  it("sets target to food if it's near", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      myGameArea.foodMatrix[8][5] = 1
+      ant._trySetTargetFood()
+      assert.equal(ant.targetX, 8);
+      assert.equal(ant.targetY, 5);
+  });
+
+  it("sets target to food if it's far", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      myGameArea.foodMatrix[14][12] = 1
+      ant._trySetTargetFood()
       assert.equal(ant.targetX, 0);
       assert.equal(ant.targetY, 0);
   });
