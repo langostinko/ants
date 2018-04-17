@@ -44,3 +44,40 @@ describe("Food", function() {
   });
 
 });
+
+describe("Ant", function() {
+
+  it("leaves nest smell when has no food", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      ant.update()
+      assert.equal(myGameArea.nestSmellMatrix[ant.x / myGameArea.CELL_SIZE][ant.y / myGameArea.CELL_SIZE], 1);
+  });
+
+  it("leaves food smell when has food", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      ant.withFood = true
+      ant.update()
+      assert.equal(myGameArea.foodSmellMatrix[ant.x / myGameArea.CELL_SIZE][ant.y / myGameArea.CELL_SIZE], 1);
+  });
+
+  it("makes random step sometimes", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      ant.randomStep = 1
+      ant._tryRandomTarget(15)
+      assert.notEqual(ant.targetX, 0);
+      assert.notEqual(ant.targetY, 0);
+  });
+
+  it("not makes random step too frequent", function() {
+      myGameArea.init()
+      ant = new Ant(40, 30)
+      ant.randomStep = 1
+      ant._tryRandomTarget(1)
+      assert.equal(ant.targetX, 0);
+      assert.equal(ant.targetY, 0);
+  });
+
+});

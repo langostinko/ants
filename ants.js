@@ -128,13 +128,6 @@ function Ant(x, y) {
     this.y = y;
 
     this.update = function() {
-        ctx = myGameArea.context;
-        if (this.withFood) {
-            ctx.fillStyle = "red"
-        } else {
-            ctx.fillStyle = "orange"
-        }
-        ctx.fillRect(this.x, this.y, this.width, this.height);
         var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
         if (this.withFood) {
@@ -149,6 +142,31 @@ function Ant(x, y) {
             )
         }
         this.smellPower *= 0.998
+    }
+    this.draw = function() {
+        ctx = myGameArea.context;
+        if (this.withFood) {
+            ctx.fillStyle = "red"
+        } else {
+            ctx.fillStyle = "orange"
+        }
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    this._tryRandomTarget = function(ts) {
+        var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
+        var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
+        if (ts - this.lastRandomStepTS > 10) {
+            var r = Math.random();
+            if (r > 1 - this.randomStep) {
+                this.lastRandomStepTS = ts
+                var xmin = Math.max(-this.seeR, -antX)
+                var xmax = Math.min(this.seeR, myGameArea.MAP_WIDTH - 1 - antX)
+                this.targetX = antX + Math.floor(Math.random() * (xmax - xmin) + xmin)
+                var ymin = Math.max(-this.seeR, -antY)
+                var ymax = Math.min(this.seeR, myGameArea.MAP_HEIGHT - 1 - antY)
+                this.targetY = antY + Math.floor(Math.random() * (ymax - ymin) + ymin)
+            }
+        }
     }
     this.smell = function(ts) {
         var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
@@ -176,17 +194,8 @@ function Ant(x, y) {
             }
         }
 
-        if (this.targetX == 0 && this.targetY == 0 && (ts - this.lastRandomStepTS > 10)) {
-            var r = Math.random();
-            if (r > 1 - this.randomStep) {
-                this.lastRandomStepTS = ts
-                var xmin = Math.max(-this.seeR, -antX)
-                var xmax = Math.min(this.seeR, myGameArea.MAP_WIDTH - 1 - antX)
-                this.targetX = antX + Math.floor(Math.random() * (xmax - xmin) + xmin)
-                var ymin = Math.max(-this.seeR, -antY)
-                var ymax = Math.min(this.seeR, myGameArea.MAP_HEIGHT - 1 - antY)
-                this.targetY = antY + Math.floor(Math.random() * (ymax - ymin) + ymin)
-            }
+        if (this.targetX == 0 && this.targetY == 0) {
+            this._tryRandomTarget(ts);
         }
 
         if (this.targetX == 0 && this.targetY == 0) {
@@ -350,6 +359,7 @@ function updateGameArea() {
         myGameArea.myAnts[i].smell(myGameArea.frameNo);
         myGameArea.myAnts[i].step();
         myGameArea.myAnts[i].update();
+        myGameArea.myAnts[i].draw();
     }
 
     var newFoods = []
