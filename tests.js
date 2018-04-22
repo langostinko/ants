@@ -1,3 +1,28 @@
+describe("Matrix", function() {
+
+  it("updates value", function() {
+      matrix = new Matrix(10, 20);
+      matrix.update(5, 10, 42);
+      assert.equal(matrix.get(5, 10), 42);
+      matrix.update(9, 5, 13);
+      assert.equal(matrix.get(9, 5), 13);
+      matrix.update(5, 10, 28);
+      assert.equal(matrix.get(5, 10), 28);
+  });
+
+  it("gets max on area", function() {
+      matrix = new Matrix(10, 20);
+      matrix.update(5, 10, 42);
+      matrix.update(9, 5, 13);
+      assert.equal(matrix.maxOnArea(0, 10, 0, 20), 42);
+      assert.equal(matrix.maxOnArea(5, 10, 5, 11), 42);
+      assert.equal(matrix.maxOnArea(0, 5, 0, 10), 0);
+      assert.equal(matrix.maxOnArea(5, 15, 0, 10), 13);
+      assert.equal(matrix.maxOnArea(9, 10, 5, 6), 13);
+  });
+
+});
+
 describe("Nest", function() {
 
   it("generates ants", function() {
