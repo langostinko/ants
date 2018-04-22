@@ -1,5 +1,21 @@
 // 2D-Tree
 function Matrix(N, M) {
+    this._init = function(v, lx, rx, ly, ry) {
+        if (lx + 1 == rx && ly + 1 == ry) {
+            return
+        }
+        this._vertex[v] = [lx, rx]
+        if (rx - lx >= ry - ly) {
+            var m = Math.floor((rx + lx) / 2);
+            this._init(v * 2, lx, m, ly, ry)
+            this._init(v * 2 + 1, m, rx, ly, ry)
+        } else {
+            var m = Math.floor((ry + ly) / 2);
+            this._init(v * 2, lx, rx, ly, m)
+            this._init(v * 2 + 1, lx, rx, m, ry)
+        }
+    }
+
     this._N = N;
     this._M = M;
     this._matrix = [];
@@ -14,6 +30,7 @@ function Matrix(N, M) {
     for (var i = 0; i < N * M; i += 1) {
         this._vertex[i] = 0
     }
+    this._init(1, 0, N, 0, M)
 
     this.get = function(i, j) {
         return this._matrix[i][j]
@@ -29,48 +46,60 @@ function Matrix(N, M) {
             if (lx == i && ly == j) {
                 this._matrix[i][j] = x;
             }
-            return this._matrix[i][j];
+            return [lx,ly];
         }
         if (lx > i || rx <= i || ly > j || ry <= j) {
             return this._vertex[v];
         }
+        var l = 0
+        var r = 0
         if (rx - lx >= ry - ly) {
             var m = Math.floor((rx + lx) / 2);
-            this._vertex[v] = Math.max(
-                this._update(v * 2, lx, m, ly, ry, i, j, x)
-                , this._update(v * 2 + 1, m, rx, ly, ry, i, j, x)
-            );
+            l = this._update(v * 2, lx, m, ly, ry, i, j, x)
+            r = this._update(v * 2 + 1, m, rx, ly, ry, i, j, x)
         } else {
             var m = Math.floor((ry + ly) / 2);
-            this._vertex[v] = Math.max(
-                this._update(v * 2, lx, rx, ly, m, i, j, x)
-                , this._update(v * 2 + 1, lx, rx, m, ry, i, j, x)
-            );
+            l = this._update(v * 2, lx, rx, ly, m, i, j, x)
+            r = this._update(v * 2 + 1, lx, rx, m, ry, i, j, x)
+        }
+        if (this._matrix[l[0]][l[1]] >= this._matrix[r[0]][r[1]]) {
+            this._vertex[v] = l
+        } else {
+            this._vertex[v] = r
         }
         return this._vertex[v]
     }
     this._maxOnArea = function(v, lx, rx, ly, ry, ilx, irx, ily, iry) {
         if (lx + 1 == rx && ly + 1 == ry) {
             if (lx == ilx && ly == ily) {
-                return this._matrix[lx][ly];
+                return [lx, ly]
             }
-            return 0;
+            return false;
         }
         if (lx >= irx || rx <= ilx || ly >= iry || ry <= ily) {
-            return 0;
+            return false;
         }
+        var l = 0
+        var r = 0
         if (rx - lx >= ry - ly) {
             var m = Math.floor((rx + lx) / 2);
-            return Math.max(
-                this._maxOnArea(v * 2, lx, m, ly, ry, ilx, Math.min(irx, m), ily, iry)
-                , this._maxOnArea(v * 2 + 1, m, rx, ly, ry, Math.max(ilx, m), irx, ily, iry)
-            );
+            l = this._maxOnArea(v * 2, lx, m, ly, ry, ilx, Math.min(irx, m), ily, iry)
+            r = this._maxOnArea(v * 2 + 1, m, rx, ly, ry, Math.max(ilx, m), irx, ily, iry)
         } else {
             var m = Math.floor((ry + ly) / 2);
-            return Math.max(
-                this._maxOnArea(v * 2, lx, rx, ly, m, ilx, irx, ily, Math.min(iry, m))
-                , this._maxOnArea(v * 2 + 1, lx, rx, m, ry, ilx, irx, Math.max(ily, m), iry)
-            );
+            l = this._maxOnArea(v * 2, lx, rx, ly, m, ilx, irx, ily, Math.min(iry, m))
+            r = this._maxOnArea(v * 2 + 1, lx, rx, m, ry, ilx, irx, Math.max(ily, m), iry)
+        }
+        if (!l) {
+            return r
+        }
+        if (!r) {
+            return l
+        }
+        if (this._matrix[l[0]][l[1]] >= this._matrix[r[0]][r[1]]) {
+            return l
+        } else {
+            return r
         }
     }}
 
