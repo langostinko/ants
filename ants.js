@@ -70,14 +70,14 @@ function Matrix(N, M) {
         return this._vertex[v]
     }
     this._maxOnArea = function(v, lx, rx, ly, ry, ilx, irx, ily, iry) {
-        if (lx + 1 == rx && ly + 1 == ry) {
-            if (lx == ilx && ly == ily) {
-                return [lx, ly]
-            }
-            return false;
-        }
         if (lx >= irx || rx <= ilx || ly >= iry || ry <= ily) {
             return false;
+        }
+        if (lx + 1 == rx && ly + 1 == ry) {
+            return [lx, ly]
+        }
+        if (lx == ilx && rx == irx && ly == ily && ry == iry) {
+            return this._vertex[v]
         }
         var l = 0
         var r = 0

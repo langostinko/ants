@@ -16,7 +16,7 @@ describe("Matrix", function() {
       matrix.update(9, 5, 13);
       assert.deepEqual(matrix.maxOnArea(0, 10, 0, 20), [5, 10]);
       assert.deepEqual(matrix.maxOnArea(5, 10, 5, 11), [5, 10]);
-      assert.deepEqual(matrix.maxOnArea(0, 5, 0, 10), [0, 0]);
+      assert.deepEqual(matrix.maxOnArea(0, 5, 0, 10), [0, 5]);
       assert.deepEqual(matrix.maxOnArea(5, 15, 0, 10), [9, 5]);
       assert.deepEqual(matrix.maxOnArea(9, 10, 5, 6), [9, 5]);
   });
