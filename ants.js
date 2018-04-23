@@ -233,12 +233,12 @@ function Ant(x, y) {
         var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
         if (this.withFood) {
             var curSmell = myGameArea.foodSmellMatrix.get(antX, antY);
-            if (this.smellPower > curSmell) {
+            if (this.smellPower / curSmell > 1.01) {
                 myGameArea.foodSmellMatrix.update(antX, antY, this.smellPower)
             }
         } else {
             var curSmell = myGameArea.nestSmellMatrix.get(antX, antY);
-            if (this.smellPower > curSmell) {
+            if (this.smellPower / curSmell > 1.01) {
                 myGameArea.nestSmellMatrix.update(antX, antY, this.smellPower)
             }
         }
