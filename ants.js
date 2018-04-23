@@ -402,24 +402,20 @@ function Ant(x, y) {
     this._trySetTargetAwayFromNest = function() {
         var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
-        var noSmellX = 0
-        var noSmellY = 0
-        for (var i = Math.max(-this.smellR, -antX); i <= Math.min(this.smellR, myGameArea.MAP_WIDTH - 1 - antX); i += 1) {
-            for (var j = Math.max(-this.smellR, -antY); j <= Math.min(this.smellR, myGameArea.MAP_HEIGHT - 1 - antY); j += 1) {
-                if (i == 0 && j == 0) {
-                    continue;
-                }
-                var len = Math.sqrt(i * i + j * j)
-                noSmellX -= myGameArea.nestSmellMatrix.get(antX + i, antY + j) * i / len
-                noSmellY -= myGameArea.nestSmellMatrix.get(antX + i, antY + j) * j / len
+        var maxSmellPos = myGameArea.nestSmellMatrix.maxOnArea(
+            Math.max(antX - this.smellR, 0)
+            , Math.min(antX + this.smellR + 1, myGameArea.MAP_WIDTH)
+            , Math.max(antY - this.smellR, 0)
+            , Math.min(antY + this.smellR + 1, myGameArea.MAP_HEIGHT)
+        )
+        if (maxSmellPos[0] != antX || maxSmellPos[1] != antY) {
+            var maxSmell = myGameArea.nestSmellMatrix.get(maxSmellPos[0], maxSmellPos[1]);
+            if (maxSmell > 0) {
+                this.targetX = -(maxSmellPos[0] - antX);
+                this.targetY = -(maxSmellPos[1] - antY);
+                this.targetX = Math.max(0, Math.min(myGameArea.MAP_WIDTH - 1, antX + this.targetX))
+                this.targetY = Math.max(0, Math.min(myGameArea.MAP_HEIGHT - 1, antY + this.targetY))
             }
-        }
-        var len = Math.sqrt(noSmellX * noSmellX + noSmellY * noSmellY)
-        if (len) {
-            this.targetX = Math.floor(noSmellX / len * this.smellR)
-            this.targetY = Math.floor(noSmellY / len * this.smellR)
-            this.targetX = Math.max(0, Math.min(myGameArea.MAP_WIDTH - 1, antX + this.targetX))
-            this.targetY = Math.max(0, Math.min(myGameArea.MAP_HEIGHT - 1, antY + this.targetY))
         }
     }
     this._trySetTargetMaxNestSmell = function() {
