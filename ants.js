@@ -4,7 +4,7 @@ function Matrix(N, M) {
         if (lx + 1 == rx && ly + 1 == ry) {
             return
         }
-        this._vertex[v] = [lx, rx]
+        this._vertex[v] = [lx, ly]
         if (rx - lx >= ry - ly) {
             var m = Math.floor((rx + lx) / 2);
             this._init(v * 2, lx, m, ly, ry)
@@ -159,7 +159,9 @@ var myGameArea = {
 function startGame() {
     myGameArea.nest = new Nest(240, 240);
 
-    myGameArea.myAnts.push(new Ant(250, 250));
+    for (var i = 0; i < 5; i += 1) {
+        myGameArea.myAnts.push(new Ant(250, 250));
+    }
 
     myGameArea.myFoods.push(new Food(230, 200));
     myGameArea.myFoods.push(new Food(400, 400));
@@ -386,23 +388,23 @@ function Ant(x, y) {
     this._trySetTargetMaxFoodSmell = function() {
         var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
-        var maxSmell = 0
-        var curPosSmell = myGameArea.foodSmellMatrix.get(antX, antY)
-        for (var i = Math.max(-this.smellR, -antX); i <= Math.min(this.smellR, myGameArea.MAP_WIDTH - 1 - antX); i += 1) {
-            for (var j = Math.max(-this.smellR, -antY); j <= Math.min(this.smellR, myGameArea.MAP_HEIGHT - 1 - antY); j += 1) {
-                if (i == 0 && j == 0) {
-                    continue;
-                }
-                var curSmell = myGameArea.foodSmellMatrix.get(antX + i, antY + j)
-                if (curSmell > maxSmell) {
-                    maxSmell = curSmell
-                    this.targetX = antX + i;
-                    this.targetY = antY + j;
-                }
+        var maxSmellPos = myGameArea.foodSmellMatrix.maxOnArea(
+            Math.max(antX - this.smellR, 0)
+            , Math.min(antX + this.smellR + 1, myGameArea.MAP_WIDTH)
+            , Math.max(antY - this.smellR, 0)
+            , Math.min(antY + this.smellR + 1, myGameArea.MAP_HEIGHT)
+        )
+        if (maxSmellPos[0] != antX || maxSmellPos[1] != antY) {
+            var maxSmell = myGameArea.foodSmellMatrix.get(maxSmellPos[0], maxSmellPos[1]);
+            if (maxSmell > 0) {
+                this.targetX = maxSmellPos[0];
+                this.targetY = maxSmellPos[1];
             }
-        }
-        if (maxSmell <= curPosSmell) { // remove old food path
-            myGameArea.foodSmellMatrix.update(antX, antY, 0)
+        } else {
+            var curPosSmell = myGameArea.foodSmellMatrix.get(antX, antY)
+            if (curPosSmell > 0) { // remove old food path
+                myGameArea.foodSmellMatrix.update(antX, antY, 0)
+            }
         }
     }
     this._trySetTargetAwayFromNest = function() {
