@@ -41,6 +41,17 @@ function Matrix(N, M) {
     this.maxOnArea = function(lx, rx, ly, ry) {
         return this._maxOnArea(1, 0, N, 0, M, lx, rx, ly, ry)
     }
+
+    // multiply every element by coef
+    this.multiply = function(coef) {
+        // no need to change this._vertex
+        for (var i = 0; i < this._N; i += 1) {
+            for (var j = 0; j < this._M; j += 1) {
+                this._matrix[i][j] *= coef
+            }
+        }
+    }
+
     this._update = function(v, lx, rx, ly, ry, i, j, x) {
         if (lx + 1 == rx && ly + 1 == ry) {
             if (lx == i && ly == j) {
@@ -129,12 +140,7 @@ var myGameArea = {
             }
         }
 
-        for (var i = 0; i < this.MAP_WIDTH; i += 1) {
-            this.foodSmellMatrix[i] = new Array(this.MAP_HEIGHT);
-            for (var j = 0; j < this.MAP_HEIGHT; j += 1) {
-                this.foodSmellMatrix[i][j] = 0
-            }
-        }
+        this.foodSmellMatrix = new Matrix(this.MAP_WIDTH, this.MAP_HEIGHT);
 
         for (var i = 0; i < this.MAP_WIDTH; i += 1) {
             this.foodMatrix[i] = new Array(this.MAP_HEIGHT);
@@ -236,9 +242,11 @@ function Ant(x, y) {
         var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
         if (this.withFood) {
-            myGameArea.foodSmellMatrix[antX][antY] = Math.max(
-                myGameArea.foodSmellMatrix[antX][antY]
-                , this.smellPower
+            myGameArea.foodSmellMatrix.update(antX, antY
+                , Math.max(
+                    myGameArea.foodSmellMatrix.get(antX, antY)
+                    , this.smellPower
+                )
             )
         } else {
             myGameArea.nestSmellMatrix[antX][antY] = Math.max(
@@ -379,13 +387,13 @@ function Ant(x, y) {
         var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
         var maxSmell = 0
-        var curPosSmell = myGameArea.foodSmellMatrix[antX][antY]
+        var curPosSmell = myGameArea.foodSmellMatrix.get(antX, antY)
         for (var i = Math.max(-this.smellR, -antX); i <= Math.min(this.smellR, myGameArea.MAP_WIDTH - 1 - antX); i += 1) {
             for (var j = Math.max(-this.smellR, -antY); j <= Math.min(this.smellR, myGameArea.MAP_HEIGHT - 1 - antY); j += 1) {
                 if (i == 0 && j == 0) {
                     continue;
                 }
-                var curSmell = myGameArea.foodSmellMatrix[antX + i][antY + j]
+                var curSmell = myGameArea.foodSmellMatrix.get(antX + i, antY + j)
                 if (curSmell > maxSmell) {
                     maxSmell = curSmell
                     this.targetX = antX + i;
@@ -394,7 +402,7 @@ function Ant(x, y) {
             }
         }
         if (maxSmell <= curPosSmell) { // remove old food path
-            myGameArea.foodSmellMatrix[antX][antY] = 0
+            myGameArea.foodSmellMatrix.update(antX, antY, 0)
         }
     }
     this._trySetTargetAwayFromNest = function() {
@@ -457,17 +465,34 @@ function drawSmellMap(matrix, color) {
     }
 }
 
+function drawSmellMatrixMap(matrix, color) {
+    for (var i = 0; i < myGameArea.MAP_WIDTH; i += 1) {
+        for (var j = 0; j < myGameArea.MAP_HEIGHT; j += 1) {
+            ctx = myGameArea.context;
+            if (matrix.get(i, j) > 0) {
+                var c = Math.floor(255 - matrix.get(i, j) * 40)
+                ctx.fillStyle = 'rgb('
+                    + color[0] * c
+                    + ', ' + color[1] * c
+                    + ', ' + color[2] * c
+                    + ')';
+                ctx.fillRect(i * myGameArea.CELL_SIZE, j * myGameArea.CELL_SIZE, myGameArea.CELL_SIZE, myGameArea.CELL_SIZE);
+            }
+        }
+    }
+}
+
 function updateGameArea() {
     myGameArea.clear();
     myGameArea.frameNo += 1;
 
     drawSmellMap(myGameArea.nestSmellMatrix, [1, 1, 255]);
-    drawSmellMap(myGameArea.foodSmellMatrix, [1, 255, 1]);
+    drawSmellMatrixMap(myGameArea.foodSmellMatrix, [1, 255, 1]);
+    myGameArea.foodSmellMatrix.multiply(0.999)
     for (var i = 0; i < myGameArea.nestSmellMatrix.length; i += 1) {
         for (var j = 0; j < myGameArea.nestSmellMatrix[i].length; j += 1) {
-            myGameArea.foodSmellMatrix[i][j] *= 0.999
-            if (myGameArea.foodSmellMatrix[i][j] < 0.001) {
-                myGameArea.foodSmellMatrix[i][j] = 0
+            if (myGameArea.foodSmellMatrix.get(i, j) > 0 && myGameArea.foodSmellMatrix.get(i, j) < 0.001) {
+                myGameArea.foodSmellMatrix.update(i, j, 0)
             }
             myGameArea.nestSmellMatrix[i][j] *= 0.999
             if (myGameArea.nestSmellMatrix[i][j] < 0.001) {

@@ -84,7 +84,7 @@ describe("Ant", function() {
       ant = new Ant(40, 30)
       ant.withFood = true
       ant.update()
-      assert.equal(myGameArea.foodSmellMatrix[ant.x / myGameArea.CELL_SIZE][ant.y / myGameArea.CELL_SIZE], 1);
+      assert.equal(myGameArea.foodSmellMatrix.get(ant.x / myGameArea.CELL_SIZE, ant.y / myGameArea.CELL_SIZE), 1);
   });
 
   it("sets target to random sometimes", function() {
@@ -126,7 +126,7 @@ describe("Ant", function() {
   it("sets target to max food smell", function() {
       myGameArea.init()
       ant = new Ant(40, 30)
-      myGameArea.foodSmellMatrix[8][5] = 1
+      myGameArea.foodSmellMatrix.update(8, 5, 1)
       ant._trySetTargetMaxFoodSmell()
       assert.equal(ant.targetX, 8);
       assert.equal(ant.targetY, 5);
