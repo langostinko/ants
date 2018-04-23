@@ -123,7 +123,6 @@ var myGameArea = {
     canvas : document.createElement("canvas"),
     nestSmellMatrix: [],
     foodSmellMatrix: [],
-    foodMatrix: [],
     nest: null,
     myAnts: [],
     myFoods: [],
@@ -135,10 +134,6 @@ var myGameArea = {
 
         this.nestSmellMatrix = new Matrix(this.MAP_WIDTH, this.MAP_HEIGHT);
         this.foodSmellMatrix = new Matrix(this.MAP_WIDTH, this.MAP_HEIGHT);
-
-        for (var i = 0; i < this.MAP_WIDTH; i += 1) {
-            this.foodMatrix[i] = new Array(this.MAP_HEIGHT);
-        }
     },
     start : function() {
         document.body.insertBefore(this.canvas, document.body.childNodes[0]);
@@ -199,14 +194,14 @@ function Food(x, y) {
     this.update = function() {
         var foodX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var foodY = Math.floor(this.y / myGameArea.CELL_SIZE)
-        myGameArea.foodMatrix[foodX][foodY] = 1
+        myGameArea.foodSmellMatrix.update(foodX, foodY, 1);
     }
     this.eated = function() {
         var foodX = Math.floor(this.x / myGameArea.CELL_SIZE)
         var foodY = Math.floor(this.y / myGameArea.CELL_SIZE)
         this.count -= 1
         if (!this.count) {
-            myGameArea.foodMatrix[foodX][foodY] = 0
+            myGameArea.foodSmellMatrix.update(foodX, foodY, 0);
         }
     }
     this.draw = function() {
@@ -222,7 +217,6 @@ function Ant(x, y) {
     this.height = 1 * myGameArea.CELL_SIZE;
     this.speed = 0.5 * myGameArea.CELL_SIZE;
     this.smellR = 5;
-    this.seeR = 5;
     this.randomStep = 0.3;
 
     this.state = 0;
@@ -272,10 +266,6 @@ function Ant(x, y) {
 
         if (this.state == this.STATE_ENUM['SEARCH_FOOD'] && this.smellPower < 0.5) {
             this.state = this.STATE_ENUM['SEARCH_NEST'];
-        }
-
-        if (this.state == this.STATE_ENUM['SEARCH_FOOD']) {
-            this._trySetTargetFood();
         }
 
         if (this.targetX == 0 && this.targetY == 0) {
@@ -356,24 +346,12 @@ function Ant(x, y) {
             var r = Math.random();
             if (r > 1 - this.randomStep) {
                 this.lastRandomStepTS = ts
-                var xmin = Math.max(-this.seeR, -antX)
-                var xmax = Math.min(this.seeR, myGameArea.MAP_WIDTH - 1 - antX)
+                var xmin = Math.max(-this.smellR, -antX)
+                var xmax = Math.min(this.smellR, myGameArea.MAP_WIDTH - 1 - antX)
                 this.targetX = antX + Math.floor(Math.random() * (xmax - xmin) + xmin)
-                var ymin = Math.max(-this.seeR, -antY)
-                var ymax = Math.min(this.seeR, myGameArea.MAP_HEIGHT - 1 - antY)
+                var ymin = Math.max(-this.smellR, -antY)
+                var ymax = Math.min(this.smellR, myGameArea.MAP_HEIGHT - 1 - antY)
                 this.targetY = antY + Math.floor(Math.random() * (ymax - ymin) + ymin)
-            }
-        }
-    }
-    this._trySetTargetFood = function() {
-        var antX = Math.floor(this.x / myGameArea.CELL_SIZE)
-        var antY = Math.floor(this.y / myGameArea.CELL_SIZE)
-        for (var i = Math.max(-this.seeR, -antX); i <= Math.min(this.seeR, myGameArea.MAP_WIDTH - 1 - antX); i += 1) {
-            for (var j = Math.max(-this.seeR, -antY); j <= Math.min(this.seeR, myGameArea.MAP_HEIGHT - 1 - antY); j += 1) {
-                if (myGameArea.foodMatrix[antX + i][antY + j]) {
-                    this.targetX = antX + i;
-                    this.targetY = antY + j;
-                }
             }
         }
     }
@@ -413,6 +391,9 @@ function Ant(x, y) {
             if (maxSmell > 0) {
                 this.targetX = -(maxSmellPos[0] - antX);
                 this.targetY = -(maxSmellPos[1] - antY);
+                var len = Math.sqrt(this.targetX * this.targetX + this.targetY * this.targetY)
+                this.targetX = Math.floor(this.targetX / len * this.smellR);
+                this.targetY = Math.floor(this.targetY / len * this.smellR);
                 this.targetX = Math.max(0, Math.min(myGameArea.MAP_WIDTH - 1, antX + this.targetX))
                 this.targetY = Math.max(0, Math.min(myGameArea.MAP_HEIGHT - 1, antY + this.targetY))
             }
